@@ -9,8 +9,7 @@ interface ContentDefinition<THIS> where THIS : ContentDefinition<THIS>, THIS : C
     fun createSubContent(): THIS
 }
 
-@PublishedApi
-internal fun ContentDefinition<*>.tag(
+fun ContentDefinition<*>.tag(
     name: String,
     attributes: Map<String, (() -> String?)?>,
     eventHandlers: Map<String, ((String?) -> Unit)?>,

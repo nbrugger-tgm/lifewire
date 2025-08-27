@@ -1,0 +1,18 @@
+# Build directories
+build/
+.gradle/
+
+# Generated files
+**/build/generated/
+
+# IDE files
+.idea/
+*.iml
+*.iws
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+/tmp/

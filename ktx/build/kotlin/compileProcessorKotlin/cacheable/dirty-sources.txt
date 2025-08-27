@@ -1,9 +1,0 @@
-/home/runner/work/lifewire/lifewire/ktx/src/processor/kotlin/eu/niton/ktx/processor/ProcessorProvider.kt
-/home/runner/work/lifewire/lifewire/ktx/src/processor/kotlin/eu/niton/ktx/processor/humanizer.kt
-/home/runner/work/lifewire/lifewire/ktx/src/processor/kotlin/eu/niton/ktx/processor/xsdparser.kt
-/home/runner/work/lifewire/lifewire/ktx/src/processor/kotlin/eu/niton/ktx/processor/model.kt
-/home/runner/work/lifewire/lifewire/ktx/src/processor/kotlin/eu/niton/ktx/processor/FileContent.kt
-/home/runner/work/lifewire/lifewire/ktx/src/processor/kotlin/eu/niton/ktx/processor/Generator.kt
-/home/runner/work/lifewire/lifewire/ktx/src/processor/kotlin/eu/niton/ktx/processor/util.kt
-/home/runner/work/lifewire/lifewire/ktx/src/processor/kotlin/eu/niton/ktx/processor/Processor.kt
-/home/runner/work/lifewire/lifewire/ktx/src/processor/kotlin/eu/niton/ktx/processor/GenerateKtx.kt
