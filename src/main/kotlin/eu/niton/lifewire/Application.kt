@@ -1,10 +1,6 @@
 package eu.niton.lifewire
 
-import eu.niton.ktx.Content
-import eu.niton.ktx.example.BodyContent
-import eu.niton.ktx.example.DivContent
-import eu.niton.ktx.example.DivHtmlTag
-import eu.niton.ktx.example.div
+import eu.niton.ktx.tags.*
 import eu.niton.lifewire.ktx.For
 import eu.niton.lifewire.ktx.If
 import eu.niton.lifewire.ktx.component
@@ -49,7 +45,7 @@ fun DivContent.TaskList(tasks: ListSignal<Task>) = component {
     }
 }
 
-fun DivContent.TaskView(task: Task, remove: () -> Unit) = component {
+fun LiContent.TaskView(task: Task, remove: () -> Unit) = component {
     If(task.done::get) {
         b { +"done" }
     }

@@ -1,6 +1,6 @@
 package eu.niton.ktx
 
-interface StringContent<T> : ContentDefinition<T> where T: ContentDefinition<T>, T: Content<T> {
+interface StringContent<T> : Content<T> where T: Content<T>, T: RenderableContent {
     operator fun String.unaryPlus() {
         +(KtxElement.String(this))
     }
@@ -10,3 +10,6 @@ interface StringContent<T> : ContentDefinition<T> where T: ContentDefinition<T>,
         })
     }
 }
+@PublishedApi
+internal class StringContentImpl : DefaultContent<StringContentImpl>(::StringContentImpl), StringContent<StringContentImpl>
+inline fun render(body: StringContent<*>.() -> Unit): KtxElement? = render(::StringContentImpl, body)

@@ -8,7 +8,8 @@ import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeSpec.Companion.anonymousClassBuilder
 import eu.niton.ktx.Content
-import eu.niton.ktx.ContentDefinition
+import eu.niton.ktx.KtxElement
+import eu.niton.ktx.RenderableContent
 import eu.niton.ktx.StringContent
 import java.net.URI
 import java.net.URL
@@ -25,13 +26,7 @@ data class Generator(
         val file = filer.createNewFile(Dependencies(false, rootFile), packageName, filename)
         file.bufferedWriter(Charsets.UTF_8).use {
             val fileSpec = FileSpec.builder(packageName, filename)
-            
-            // Add imports for runtime functions if this file contains functions
-            if (fileContent.any { it is FileContent.Function }) {
-                fileSpec.addImport("eu.niton.ktx", "tag")
-                fileSpec.addImport("eu.niton.ktx", "render")
-            }
-            
+
             fileContent.forEach {
                 when (it) {
                     is FileContent.Function -> fileSpec.addFunction(it.function)
@@ -65,19 +60,22 @@ data class Generator(
 data class TagFile(
     val tagInterface: FileContent.Type,
     val tagFunction: FileContent.Function,
-    val bodyTypeAlias: FileContent.TypeAlias?
-)
+    val bodyTypeAlias: FileContent.TypeAlias?,
+    val contentTypeAlias: FileContent.TypeAlias?
+) {
+    val fileContent = listOfNotNull(tagInterface, tagFunction, bodyTypeAlias,contentTypeAlias)
+}
 
 private val tags = mutableMapOf<String, TagFile>()
-private val attributeGroups = mutableMapOf<String, FileContent.Type>()
-private val tagGroups = mutableMapOf<String, FileContent.Type>()
+private val tagGroups = mutableMapOf<String, TagGroupFile>()
 
 fun Generator.generate() {
     htmlSchema.value.tags.forEach {
         getTag(it.value)
     }
-    val tagFilecontent = tags.values.flatMap { listOfNotNull(it.tagInterface, it.tagFunction, it.bodyTypeAlias) }
-    val files = (tagFilecontent + tagGroups.values + attributeTypes.values)
+    val tagFileContent = tags.values.flatMap { it.fileContent }
+    val groupFileContent = tagGroups.values.flatMap { it.fileContent }
+    val files = (tagFileContent + groupFileContent + attributeTypes.values)
         .groupBy { it.packageName }
         .mapValues { it.value.groupBy { it.fileName } }
 
@@ -88,99 +86,103 @@ fun Generator.generate() {
     }
 }
 
-private val contentClass = Content::class.asClassName()
+private val tagGeneric = TypeVariableName("T", RenderableContent::class.asClassName())
 private val strContentClass = StringContent::class.asClassName()
+private val contentClass = Content::class.asClassName()
+private val renderable = RenderableContent::class.asClassName()
+private val contentImpl = ClassName("eu.niton.ktx", "DefaultContent")
+private val renderFn = MemberName("eu.niton.ktx", "render")
+private val tagFn = MemberName("eu.niton.ktx", "tag")
+fun TypeSpec.Builder.addSelfReferentialTypeVar(name: String): TypeSpec.Builder {
+    return addTypeVariable(
+        tagGeneric.copy(
+            bounds = listOf(
+                ClassName.bestGuess(name).parameterizedBy(tagGeneric),
+                renderable
+            )
+        )
+    )
+}
 
 fun Generator.getTag(tag: TagInfo): TagFile {
     return tags.nonConcurrentComputeIfAbsent(tag.name) {
         // Create the per-tag interface (e.g., DivHtmlTag<T> : ContentDefinition<T>)
-        val className = "${tag.name.humanize().capitalize()}HtmlTag"
+        val className = tag.className()
         val interfaceClassName = "eu.niton.ktx.tags.$className"
-        
-        val contentDefinitionClass = ContentDefinition::class.asClassName()
-        val contentClass = Content::class.asClassName()
-        
+
+
         val tagInterface = TypeSpec.interfaceBuilder(className)
-            .addTypeVariable(
-                tagGeneric.copy(
-                    bounds = listOf(
-                        ClassName.bestGuess(interfaceClassName).parameterizedBy(tagGeneric),
-                        contentClass.parameterizedBy(tagGeneric)
-                    )
-                )
-            )
-            .addSuperinterface(contentDefinitionClass.parameterizedBy(tagGeneric))
+            .addSelfReferentialTypeVar(className)
+            .addSuperinterface(contentClass.parameterizedBy(tagGeneric))
             .build()
             .asFile("tags")
-            
-        // Create the extension function that calls tag()
-        val tagFunction = generateTagExtensionFunction(tag, interfaceClassName)
-        
-        // Generate content type and body type alias using existing logic
-        // val contentType = getContentType(tag.content, tag.name + "content", filename = className)
-        // TODO: Temporarily disable body type alias until content generation is fixed
-        val bodyTypeAlias = null/*contentType?.let {
-            val contentFnType = LambdaTypeName.get(receiver = it.parameterizedBy(tagGeneric), returnType = UNIT)
+
+        val contentType = getContentType(tag.content, tag.name + "TagContent", filename = className)?.let {
+            it.component1().parameterizedBy(STAR) to it.component2()
+        }
+        val contentTypeAlias = contentType?.let {
+            TypeAliasSpec.builder("${tag.name.humanize().capitalize()}Content", it.component1())
+                .build().asFile("tags", className) to it.component2()
+        }
+        val bodyTypeAlias = contentTypeAlias?.let {
+            val contentFnType = LambdaTypeName.get(receiver = it.component1().typeName(), returnType = UNIT)
             TypeAliasSpec.builder(tag.name.humanize().capitalize() + "Body", contentFnType)
-                .addTypeVariable(tagGeneric)
-                .build().asFile("tags", className)
-        }*/
-        
-        TagFile(tagInterface, tagFunction, bodyTypeAlias)
+                .build().asFile("tags", className) to it.component2()
+        }
+        val bodyType = bodyTypeAlias?.let { it.component1().typeName() to it.component2() }
+        // Create the extension function that calls tag()
+        val tagFunction = generateTagFunction(tag, bodyType)
+            .receiver(tagInterface.typeName().parameterizedBy(STAR))
+            .build()
+            .asFile("tags", className)
+
+        TagFile(tagInterface, tagFunction, bodyTypeAlias?.component1(), contentTypeAlias?.component1())
     }
 }
 
 // Generate the extension function for a tag that calls the new runtime API
-private fun Generator.generateTagExtensionFunction(tag: TagInfo, interfaceClassNameFully: String): FileContent.Function {
+private fun Generator.generateTagFunction(tag: TagInfo, bodyType: Pair<TypeName, MemberName>?): FunSpec.Builder {
     val tagName = tag.name
     val className = tag.className()
     val funBuilder = FunSpec.builder(tagName)
-        // TODO: Re-add inline when body parameters are re-enabled
-        // .addModifiers(KModifier.INLINE)
-        .receiver(ClassName.bestGuess(interfaceClassNameFully).parameterizedBy(STAR))
-    
+        .addModifiers(KModifier.INLINE)
+
     // Use existing logic to add attribute parameters
     tag.content.allAttributes.sortedByDescending { it.required }.forEach { attribute ->
-        addAttributeParameter(attribute, tag, funBuilder)
+        funBuilder.addParameter(
+            getAttributeParameter(attribute, tag)
+                .addModifiers(KModifier.NOINLINE)
+                .build()
+        )
     }
-    
-    // Add body parameter using existing content type logic  
-    // val contentType = getContentType(tag.content, tag.name + "content", filename = className)
-    // TODO: Temporarily disable body parameters until content generation is fixed
-    val contentType: ClassName? = null
-    val bodyParam = null/*contentType?.let {
-        val parameterizedContent = it.parameterizedBy(tagGeneric)
-        val contentFnType = LambdaTypeName.get(receiver = parameterizedContent, returnType = UNIT)
-        val param = ParameterSpec.builder("body", contentFnType).build()
+
+    val bodyParam = bodyType?.component1()?.let {
+        val param = ParameterSpec.builder("body", it).build()
         funBuilder.addParameter(param)
         param
-    }*/
-    
+    }
+
     // Generate function body that calls tag() with new runtime API
     val attributeMapCode = getAttributeMap(tag)
     val eventMapCode = getEventListenerMap(tag)
-    val bodyExpression = "null" // TODO: Re-enable when content generation is fixed
-    /*if (contentType != null && bodyParam != null) {
-        "render(${bodyParam.name})"
-    } else "null"*/
-    
+    val bodyExpression = if(bodyType != null && bodyParam != null) {
+        CodeBlock.of("%M(%N)", bodyType.component2(), bodyParam.name)
+    } else CodeBlock.of("null")
+
     funBuilder.addStatement(
-        "return tag(%S, %L, %L, %L)",
+        "return %M(%S, %L, %L, %L)",
+        tagFn,
         tagName,
         attributeMapCode,
         eventMapCode,
         bodyExpression
     )
-    
-    return funBuilder.build().asFile("tags", className)
+
+    return funBuilder
 }
 
 
-
-private val tagGeneric = TypeVariableName("T")
-
-
-private fun Generator.getEventListenerMap(tag: TagInfo): CodeBlock {
+private fun getEventListenerMap(tag: TagInfo): CodeBlock {
     val code = CodeBlock.builder()
     code.add("mapOf(\n")
     tag.content.allAttributes.filter { it.type is AttributeType.EventHandler }.forEach { attribute ->
@@ -227,11 +229,10 @@ private fun Generator.getAttributeValueStringFn(
         .build()
 }
 
-private fun Generator.addAttributeParameter(
+private fun Generator.getAttributeParameter(
     attribute: AttributeInfo,
-    tag: TagInfo,
-    tagFn: FunSpec.Builder
-) {
+    tag: TagInfo
+): ParameterSpec.Builder {
     val qualifiedName = attribute.fullyQualifiedName(tag)
     val attributeType = getAttributeType(
         attribute.name,
@@ -241,8 +242,6 @@ private fun Generator.addAttributeParameter(
     val type = attributeType as? LambdaTypeName ?: LambdaTypeName.get(returnType = attributeType)
         .copy(nullable = !attribute.required)
     val param = ParameterSpec.builder(attribute.name.humanize(), type)
-        // TODO: Re-add noinline when inline functions are re-enabled
-        // .addModifiers(KModifier.NOINLINE) // Add noinline for nullable lambda parameters
     if (!attribute.required) {
         val defaultValue = if (attribute.defaultValue != null) {
             CodeBlock.builder().beginControlFlow("").add(
@@ -251,9 +250,10 @@ private fun Generator.addAttributeParameter(
         } else CodeBlock.of("null")
         param.defaultValue(defaultValue)
     }
-    tagFn.addParameter(param.build())
+    return param
 }
 
+//Isn't this the wrong way around??
 private fun AttributeInfo.fullyQualifiedName(tag: TagInfo) = if (global) "${tag.name}-${name}" else name
 
 private fun Generator.getAttributeLiteral(
@@ -291,6 +291,7 @@ private fun Generator.getAttributeType(
             parameters = listOf(ParameterSpec.unnamed(STRING.copy(nullable = true))),
             returnType = UNIT
         )
+
         AttributeType.Number -> FLOAT
         AttributeType.String -> STRING
         AttributeType.URI -> URI::class.asClassName()
@@ -338,39 +339,13 @@ private fun Generator.getAttributeEnum(
 
 private fun TagInfo.className(): String = "${name.humanize().capitalize()}HtmlTag"
 
-
-/**
- * Generates the interface of the "Body-receiver" the type that is given to the body-lambda
- */
-private fun Generator.getContentType(content: TagContent, fallbackName: String, filename: String? = null): ClassName? {
-    val requiredSuperinterfaces = content.childrenGroups.size +
-            (if (content.allowText) 1 else 0) +
-            (if (content.superType != null) 1 else 0)
-    return if (content.directChildren.isNotEmpty() || requiredSuperinterfaces > 1) {
-        val tagGroup = TagGroup(
-            content.name ?: fallbackName,
-            content.directChildren.toList(),
-            content.childrenGroups
-        );
-        val superType = listOfNotNull(content.superType?.let { getContentType(it, fallbackName) })
-        val packageName = if (content.name != null) "tags.content" else "tags"
-        val fileName = if (content.name != null) null else filename
-        generateTagGroup(
-            tagGroup,
-            packageName,
-            fileName = fileName,
-            allowText = content.allowText,
-            superTypes = superType
-        ).typeName()
-    } else if (content.allowText) {
-        strContentClass
-    } else if (content.superType != null) {
-        getContentType(content.superType!!, fallbackName)
-    } else if (content.childrenGroups.size == 1) {
-        generateTagGroup(content.childrenGroups.first()).typeName()
-    } else null
+data class TagGroupFile(
+    val groupInterface: FileContent.Type,
+    val implementation: FileContent.Type,
+    val renderFunction: FileContent.Function
+) {
+    val fileContent = listOf(groupInterface, implementation, renderFunction)
 }
-
 
 fun Generator.generateTagGroup(
     group: TagGroup,
@@ -378,72 +353,110 @@ fun Generator.generateTagGroup(
     fileName: String? = null,
     allowText: Boolean = false,
     superTypes: Collection<ClassName> = emptyList()
-): FileContent.Type {
+): TagGroupFile {
     tagGroups[group.name]?.let {
         return it
     }
 
-    val className = group.name.humanize().capitalize()
-        .replace("Tag", "")
+    val interfaceName = group.name.humanize().capitalize()
+//        .replace("Tag", "")
         .replace("Content", "")
         .replace("Group", "") + "Content"
-    val contentInterface = TypeSpec.interfaceBuilder(className)
-        .addTypeVariable(tagGeneric)
-        .addSuperinterface(if (allowText) strContentClass.parameterizedBy(tagGeneric) else contentClass)
-    val implementation = TypeSpec.classBuilder("Impl")
-        .addTypeVariable(tagGeneric)
-    if (allowText) {
-        implementation.addSuperContent(strContentClass)
-    } else implementation.addSuperinterface(contentClass)
-    group.inheritedGroups.map { generateTagGroup(it).typeName() }.distinctBy { it.toString() }.forEach { group ->
-        contentInterface.addSuperinterface(group.parameterizedBy(tagGeneric))
-        implementation.addSuperContent(group)
-    }
+    val contentInterface = TypeSpec.interfaceBuilder(interfaceName)
+        .addSelfReferentialTypeVar(interfaceName)
+        .addSuperinterface(
+            if (allowText) strContentClass.parameterizedBy(tagGeneric)
+            else contentClass.parameterizedBy(tagGeneric)
+        )
+    val implName = "${interfaceName}Impl"
+    val implementation = TypeSpec.classBuilder(implName)
+        .addModifiers(KModifier.INTERNAL)
+        .addAnnotation(PublishedApi::class)
+        .superclass(contentImpl.parameterizedBy(ClassName.bestGuess(implName)))
+        .addSuperclassConstructorParameter("::${implName}")
+    group.inheritedGroups.map { generateTagGroup(it).groupInterface.typeName() }.distinctBy { it.toString() }
+        .forEach { group ->
+            contentInterface.addSuperinterface(group.parameterizedBy(tagGeneric))
+        }
     superTypes.forEach { superType ->
         contentInterface.addSuperinterface(superType)
-        implementation.addSuperContent(superType)
     }
     val incompleteSpec = contentInterface.build().asFile(packageName ?: "tags.content", fileName)
-    tagGroups[group.name] = incompleteSpec
-    implementation.addSuperinterface(incompleteSpec.typeName().parameterizedBy(tagGeneric))
-
-    val inheritedFromMultiple = group.inheritedGroups
-        .flatMap { it.tags }
-        .groupingBy { it }.eachCount()
-        .filter { it.value > 1 }
-        .keys
-
-    inheritedFromMultiple.forEach {
-        val tag = getTag(it).tagInterface
-        val delegate = PropertySpec.builder(it.name, tag.typeName().parameterizedBy(tagGeneric))
-            .addModifiers(KModifier.ABSTRACT, KModifier.OVERRIDE)
-        contentInterface.addProperty(delegate.build())
-        val delegateImpl = PropertySpec.builder(it.name, tag.typeName().parameterizedBy(tagGeneric))
-            .addModifiers(KModifier.OVERRIDE)
-            .getter(
-                FunSpec.getterBuilder().addCode("TODO(\"Extension functions handle tag creation\")")
-                    .build()
+    val incompleteImpl = implementation.build().asFile(packageName ?: "tags.content", fileName)
+    val renderFn = FunSpec.builder("render")
+        .addModifiers(KModifier.INLINE)
+        .addParameter(
+            ParameterSpec(
+                "body", LambdaTypeName.get(
+                    receiver = incompleteSpec.typeName().parameterizedBy(STAR),
+                    returnType = UNIT
+                )
             )
-        implementation.addProperty(delegateImpl.build())
-    }
+        )
+        .returns(KtxElement::class.asClassName().copy(nullable = true))
+        .addStatement("return %M(%L,body)", renderFn, incompleteImpl.typeName().constructorReference())
+        .build()
+        .asFile(packageName ?: "tags.content", fileName ?: incompleteSpec.fileName)
+    tagGroups[group.name] = TagGroupFile(
+        groupInterface = incompleteSpec,
+        implementation = incompleteImpl,
+        renderFn
+    )
+    implementation.addSuperinterface(incompleteSpec.typeName().parameterizedBy(ClassName.bestGuess(implName)))
 
     group.directTags.forEach {
         val tag = getTag(it)
         contentInterface.addSuperinterface(tag.tagInterface.typeName().parameterizedBy(tagGeneric))
-        val delegateImpl = PropertySpec.builder(it.name, tag.tagInterface.typeName().parameterizedBy(tagGeneric))
-            .addModifiers(KModifier.OVERRIDE)
-            .getter(
-                FunSpec.getterBuilder()
-                    .addCode("TODO(\"Extension functions handle tag creation\")")
-                    .build()
-            )
-        implementation.addProperty(delegateImpl.build())
     }
 
-    contentInterface.addType(implementation.build())
-    val completeSpec = contentInterface.build().asFile(packageName ?: "tags.content", fileName)
-    tagGroups[group.name] = completeSpec
-    return completeSpec
+    val completeFile = run {
+        val completeSpec = contentInterface.build().asFile(packageName ?: "tags.content", fileName)
+        val completeImpl = implementation.build().asFile(packageName ?: "tags.content", fileName?:completeSpec.fileName)
+        TagGroupFile(
+            groupInterface = completeSpec,
+            implementation = completeImpl,
+            renderFunction = renderFn
+        )
+    }
+    tagGroups[group.name] = completeFile
+    return completeFile
+}
+
+
+/**
+ * Generates the interface of the "Body-receiver" the type that is given to the body-lambda
+ */
+private fun Generator.getContentType(content: TagContent, fallbackName: String, filename: String? = null): Pair<ClassName,MemberName>? {
+    val requiredSuperinterfaces = content.childrenGroups.size +
+            (if (content.allowText) 1 else 0) +
+            (if (content.superType != null) 1 else 0)
+    if (content.directChildren.isNotEmpty() || requiredSuperinterfaces > 1) {
+        val tagGroup = TagGroup(
+            content.name ?: fallbackName,
+            content.directChildren.toList(),
+            content.childrenGroups
+        );
+        val superType = listOfNotNull(content.superType?.let { getContentType(it, fallbackName)?.component1() })
+        val packageName = if (content.name != null) "tags.content" else "tags"
+        val fileName = if (content.name != null) null else filename
+        return generateTagGroup(
+            tagGroup,
+            packageName,
+            fileName = fileName,
+            allowText = content.allowText,
+            superTypes = superType
+        ).let {
+            it.groupInterface.typeName() to it.renderFunction.reference()
+        }
+    } else if (content.allowText) {
+        return strContentClass to renderFn
+    } else if (content.superType != null) {
+        return getContentType(content.superType!!, fallbackName)
+    } else if (content.childrenGroups.size == 1) {
+        return generateTagGroup(content.childrenGroups.first()).let {
+            it.groupInterface.typeName() to it.renderFunction.reference()
+        }
+    } else return null
 }
 
 fun TypeSpec.Builder.addSuperContent(superType: ClassName): TypeSpec.Builder {
