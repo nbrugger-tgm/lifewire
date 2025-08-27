@@ -25,11 +25,12 @@ fun BodyContent.App(cx: Context) {
         Task(cx, "Create Some tasks"),
         Task(cx, "And delete some others")
     ))
-    div {
-        h1 {
+    script(src= { "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4" }){}
+    div(`class` = {"flex flex-col gap-4"}) {
+        h1(`class` = {"text-3xl font-bold"}) {
             +"TODO List"
         }
-        h3 {
+        h3(`class` = {"text-xl color-gray-600 m-1"}) {
             +{ tasks.size.toString() + " Tasks" }
         }
         TodoCreator(cx, onAdd = { tasks.add(it) })
@@ -40,21 +41,25 @@ fun BodyContent.App(cx: Context) {
 fun DivContent.TaskList(tasks: ListSignal<Task>) = component {
     ol {
         For(elements = tasks) {
-            li { TaskView(task = it, remove = { tasks.remove(it) }) }
+            TaskView(task = it, remove = { tasks.remove(it) })
         }
     }
 }
 
-fun LiContent.TaskView(task: Task, remove: () -> Unit) = component {
-    If(task.done::get) {
-        b { +"done" }
-    }
-    +{ task.name() }
-    button(onClick = { task.done { !it } }) {
-        +{ if (task.done()) "Done" else "Still todo" }
-    }
-    button(onClick = { remove() }) {
-        +"Delete"
+fun LiHtmlTag<*>.TaskView(task: Task, remove: () -> Unit) = component {
+    li {
+        div(`class` = {"flex flex-row gap-1"}) {
+            If(task.done::get) {
+                b(`class` = {"color-green mr-2"}) { +"done" }
+            }
+            +{ task.name() }
+            button(`class` = {"bg-green-200 rounded border-1 p-1"}, onClick = { task.done { !it } }) {
+                +{ if (!task.done()) "Done" else "Still todo" }
+            }
+            button(`class` = {"bg-red-200 rounded border-1 p-1"},onClick = { remove() }) {
+                +"Delete"
+            }
+        }
     }
 }
 
@@ -68,8 +73,8 @@ fun DivHtmlTag<*>.TodoCreator(cx: Context, onAdd: (Task) -> Unit) = component {
     }
     div {
         span { +"Neuen Task anlegen" }
-        input(onInput = { nextTask(it) })
-        button(onClick = { addTask() }) {
+        input(`class` = {"border-1 rounded p-1 bg-gray-200"},onInput = { nextTask(it) })
+        button(`class` = {"border-1 rounded p-1"}, onClick = { addTask() }) {
             +"Add"
         }
     }
