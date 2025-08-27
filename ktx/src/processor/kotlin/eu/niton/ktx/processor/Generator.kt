@@ -135,7 +135,8 @@ private fun Generator.generateTagExtensionFunction(tag: TagInfo, interfaceClassN
     val tagName = tag.name
     val className = tag.className()
     val funBuilder = FunSpec.builder(tagName)
-        .addModifiers(KModifier.INLINE)
+        // TODO: Re-add inline when body parameters are re-enabled
+        // .addModifiers(KModifier.INLINE)
         .receiver(ClassName.bestGuess(interfaceClassNameFully).parameterizedBy(STAR))
     
     // Use existing logic to add attribute parameters
@@ -240,7 +241,8 @@ private fun Generator.addAttributeParameter(
     val type = attributeType as? LambdaTypeName ?: LambdaTypeName.get(returnType = attributeType)
         .copy(nullable = !attribute.required)
     val param = ParameterSpec.builder(attribute.name.humanize(), type)
-        .addModifiers(KModifier.NOINLINE) // Add noinline for nullable lambda parameters
+        // TODO: Re-add noinline when inline functions are re-enabled
+        // .addModifiers(KModifier.NOINLINE) // Add noinline for nullable lambda parameters
     if (!attribute.required) {
         val defaultValue = if (attribute.defaultValue != null) {
             CodeBlock.builder().beginControlFlow("").add(
