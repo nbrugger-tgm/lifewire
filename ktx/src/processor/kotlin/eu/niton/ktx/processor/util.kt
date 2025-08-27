@@ -16,10 +16,4 @@ fun String.asResourceUrl(): URL = ResourceLoader::class.java.classLoader.getReso
 fun String.quote() = "\"$this\""
 
 val reservedNames = setOf("class", "val", "var", "object", "true", "false", "as", "is", "for")
-fun String.replaceIfReserved(): String {
-    return when {
-        this in reservedNames -> "html" + this.capitalize()
-        this.contains('-') -> "`$this`" // Wrap hyphenated names in backticks
-        else -> this
-    }
-}
+fun String.replaceIfReserved() = if (this in reservedNames) "html" + this.capitalize() else this
