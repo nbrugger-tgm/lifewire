@@ -1,33 +1,47 @@
-## Micronaut 4.9.2 Documentation
+# Lifewire
 
-- [User Guide](https://docs.micronaut.io/4.9.2/guide/index.html)
-- [API Reference](https://docs.micronaut.io/4.9.2/api/index.html)
-- [Configuration Reference](https://docs.micronaut.io/4.9.2/guide/configurationreference.html)
-- [Micronaut Guides](https://guides.micronaut.io/index.html)
----
+An experimental way to write browser frontend applications in kotlin with JVM support.
 
-- [Shadow Gradle Plugin](https://gradleup.com/shadow/)
-- [Micronaut Gradle Plugin documentation](https://micronaut-projects.github.io/micronaut-gradle-plugin/latest/)
-- [GraalVM Gradle Plugin documentation](https://graalvm.github.io/native-build-tools/latest/gradle-plugin.html)
-## Feature serialization-jackson documentation
+The idea is to be able to write React/SolidJS/JSX like application with the full power of the JVM,
+where the application runs as a server that sends minified commands to the browser to manipulate the DOM.
 
-- [Micronaut Serialization Jackson Core documentation](https://micronaut-projects.github.io/micronaut-serialization/latest/guide/)
+## How does it look?
+> A full working and runnable example can be found in [`Application.kt`](src/main/kotlin/eu/niton/lifewire/Application.kt)
 
+```kotlin
+fun main(args: Array<String>) {
+    runLifewire(args) { cx -> App(cx) }
+}
 
-## Feature websocket documentation
+fun BodyContent.App(cx: Context) {
+    val tasks = cx.createSignal(listOf(
+        Task(cx, "Create Some tasks"),
+        Task(cx, "And delete some others")
+    ))
+    div(`class` = {"flex flex-col gap-4"}) {
+        h1(`class` = {"text-3xl font-bold"}) {
+            +"TODO List"
+        }
+        h3(`class` = {"text-xl color-gray-600 m-1"}) {
+            +{ tasks.size.toString() + " Tasks" }
+        }
+        TodoCreator(cx, onAdd = { tasks.add(it) })
+        TaskList(tasks)
+    }
+}
+```
+### How it works
+Similar to SolidJS, everything is based on signals and fine-grained reactivity, nothing that doesn't need to be updated is.#
+This is necessary to keep the amount of data sent to the browser as low as possible. When an IF block switches from true to false,
+only a single "remove element" command is sent to the browser, instead of re-rendering the whole block.
 
-- [Micronaut Websocket documentation](https://docs.micronaut.io/latest/guide/#websocket)
+The commands are sent down to the browser via a websocket in a minified format. The browser parses the commands and applies them to the DOM.
 
-
-## Feature micronaut-aot documentation
-
-- [Micronaut AOT documentation](https://micronaut-projects.github.io/micronaut-aot/latest/guide/)
-
-
-## Feature ksp documentation
-
-- [Micronaut Kotlin Symbol Processing (KSP) documentation](https://docs.micronaut.io/latest/guide/#kotlin)
-
-- [https://kotlinlang.org/docs/ksp-overview.html](https://kotlinlang.org/docs/ksp-overview.html)
+#### Example commands
+| command         | meaning                                                                              |
+|-----------------|--------------------------------------------------------------------------------------|
+| 1+0t3_div       | Insert a div with id 3 as a child of element with id 0 into slot 1                   |
+| 0+4s5_TODO List | Insert a text node with id 5 "TODO List" as a child of element with id 4 into slot 0 |
+| a9+type=1       | Set attribute "type" to "1" on element with id 9                                     |
 
 
