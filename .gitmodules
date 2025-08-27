@@ -1,0 +1,3 @@
+[submodule "libs/signaling"]
+	path = libs/signaling
+	url = git@github.com:nbrugger-tgm/signaling.git
