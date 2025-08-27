@@ -1,8 +1,8 @@
 package eu.niton.lifewire.ktx
 
 import eu.niton.ktx.KtxElement
-import eu.niton.ktx.example.BodyContent
-import eu.niton.ktx.render
+import eu.niton.ktx.tags.BodyContent
+import eu.niton.ktx.tags.content.render
 import eu.niton.lifewire.MainComponent
 import eu.niton.lifewire.Wire
 import eu.nitonfx.signaling.api.Context
@@ -28,7 +28,8 @@ class KTX(private val wire: Wire, private val cx: Context) {
     val scheduling: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
     fun run(mainComponent: MainComponent) {
         cx.run {
-            insert({ render(::BodyContent) { mainComponent(cx) } }, Parent(tagId++))
+            val body : BodyContent.()->Unit = { mainComponent(cx) }
+            insert({ render(body) }, Parent(tagId++))
         }.forEach {
             scheduling.schedule({print(it.formatAsTree())},30, TimeUnit.SECONDS)
         }
@@ -106,8 +107,9 @@ class KTX(private val wire: Wire, private val cx: Context) {
             wire.remove(id)
         }
         component.attributes.forEach {
+            val value = it.value ?: return@forEach
             cx.createEffect {
-                wire.setAttribute(id, it.key, it.value?.invoke())
+                wire.setAttribute(id, it.key, value())
             }.name("set attribute ${it.key}")
         }
         component.eventListeners.forEach {

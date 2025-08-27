@@ -39,5 +39,10 @@ sealed interface FileContent {
         val spec: TypeAliasSpec,
         override val fileName: String,
         override val packageName: String
-    ) : FileContent
+    ) : FileContent {
+        fun typeName() = ClassName(
+            packageName = packageName,
+            spec.name
+        )
+    }
 }
