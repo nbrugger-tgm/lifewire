@@ -29,7 +29,7 @@ dependencies {
     testImplementation("io.micronaut:micronaut-http-client")
 
     implementation("eu.nitonfx.signaling:lib")
-    implementation(project(":ktx"))
+    implementation("eu.niton.ktx:html5")
 }
 
 java {

@@ -1,6 +1,7 @@
 package eu.niton.lifewire.ktx
 
 import eu.niton.ktx.KtxElement
+import eu.niton.ktx.tags.BodyBody
 import eu.niton.ktx.tags.BodyContent
 import eu.niton.ktx.tags.content.render
 import eu.niton.lifewire.MainComponent
@@ -28,7 +29,7 @@ class KTX(private val wire: Wire, private val cx: Context) {
     val scheduling: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
     fun run(mainComponent: MainComponent) {
         cx.run {
-            val body : BodyContent.()->Unit = { mainComponent(cx) }
+            val body : BodyBody = { mainComponent(cx) }
             insert({ render(body) }, Parent(tagId++))
         }.forEach {
             scheduling.schedule({print(it.formatAsTree())},30, TimeUnit.SECONDS)

@@ -1,4 +1,4 @@
-package eu.niton.lifewire.ktx
+package eu.niton.ktx.spa
 
 import eu.niton.ktx.Content
 import eu.niton.ktx.KtxElement

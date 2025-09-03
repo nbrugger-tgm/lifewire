@@ -1,3 +1,6 @@
 [submodule "libs/signaling"]
 	path = libs/signaling
 	url = git@github.com:nbrugger-tgm/signaling.git
+[submodule "libs/ktx"]
+	path = libs/ktx
+	url = git@github.com:nbrugger-tgm/ktx.git

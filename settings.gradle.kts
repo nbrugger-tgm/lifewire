@@ -7,8 +7,9 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "0.8.0"
 }
 includeBuild(file("./libs/signaling"))
-include("ktx")
+includeBuild(file("./libs/ktx"))
 include("example")
+include("spa")
 
 rootProject.name="lifewire"
 
