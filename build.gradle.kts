@@ -33,7 +33,10 @@ dependencies {
 }
 
 java {
-    sourceCompatibility = JavaVersion.toVersion("21")
+    
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 application {

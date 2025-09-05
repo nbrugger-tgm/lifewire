@@ -19,18 +19,43 @@ import eu.niton.ktx.tags.span
 import eu.nitonfx.signaling.api.Context
 import eu.nitonfx.signaling.api.ListSignal
 import eu.nitonfx.signaling.api.Signal
+import eu.nitonfx.signaling.api.SignalLike
 import org.teavm.jso.dom.html.HTMLDocument
+import kotlin.properties.Delegates
+import kotlin.properties.ReadWriteProperty
+import kotlin.reflect.KProperty
 
 val cx = Context.global;
+internal val document get() = HTMLDocument.current()
+
+
+operator fun <T> SignalLike<T>.invoke(): T = get()
+operator fun <T> Signal<T>.invoke(value: T) = set(value)
+operator fun <T> Signal<T>.invoke(value: (T) -> T) = update(value)
+
+fun <T> createSignal(init: T): ReadWriteProperty<Any?, T> {
+    val signal = cx.createSignal(init)
+    return object : ReadWriteProperty<Any?, T> {
+        override fun getValue(thisRef: Any?, property: KProperty<*>): T {
+            return signal()
+        }
+
+        override fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
+            signal(value)
+        }
+    }
+}
 
 fun main() {
-    val mountPoint = HTMLDocument.current().getElementById("app")
-    insert({ render(BodyContent::App) }, mountPoint)
+    val mountPoint = document.getElementById("app")
+    cx.run {
+        insert({ render(BodyContent::App) }, mountPoint)
+    }
 }
 
 class Task(name: String) {
-    val name: Signal<String> = cx.createSignal(name)
-    val done: Signal<Boolean> = cx.createSignal(false)
+    var name by createSignal(name)
+    var done by createSignal(false)
 }
 
 fun BodyContent.App() {
@@ -48,7 +73,7 @@ fun BodyContent.App() {
         h3(`class` = { "text-xl color-gray-600 m-1" }) {
             +{ tasks.size.toString() + " Tasks" }
         }
-        TodoCreator(cx, onAdd = { tasks.add(it) })
+        TodoCreator(onAdd = { t, i -> tasks.add(i, t) })
         TaskList(tasks)
     }
 }
@@ -64,12 +89,12 @@ fun DivContent.TaskList(tasks: ListSignal<Task>) = component {
 fun LiHtmlTag<*>.TaskView(task: Task, remove: () -> Unit) = component {
     li {
         div(`class` = { "flex flex-row gap-1" }) {
-            If(task.done::get) {
+            If(task::done) {
                 b(`class` = { "color-green mr-2" }) { +"done" }
             }
-            +{ task.name() }
-            button(`class` = { "bg-green-200 rounded border-1 p-1" }, onClick = { task.done { !it } }) {
-                +{ if (!task.done()) "Done" else "Still todo" }
+            +{ task.name }
+            button(`class` = { "bg-green-200 rounded border-1 p-1" }, onClick = { task.done != task.done }) {
+                +{ if (!task.done) "Done" else "Still todo" }
             }
             button(`class` = { "bg-red-200 rounded border-1 p-1" }, onClick = { remove() }) {
                 +"Delete"
@@ -78,17 +103,29 @@ fun LiHtmlTag<*>.TaskView(task: Task, remove: () -> Unit) = component {
     }
 }
 
-fun DivHtmlTag<*>.TodoCreator(cx: Context, onAdd: (Task) -> Unit) = component {
-    val nextTask = cx.createSignal("")
+fun DivHtmlTag<*>.TodoCreator(onAdd: (Task, Int) -> Unit) = component {
+    var nextTask by createSignal<String?>("")
+    var index by createSignal(0)
     fun addTask() {
-        if (nextTask() == null) return
-        val task = Task(cx, nextTask())
-        onAdd(task)
-        nextTask(null)
+        if (nextTask == null) return
+        val task = Task(nextTask!!)
+        onAdd(task, index)
+        nextTask = ""
     }
     div {
         span { +"Neuen Task anlegen" }
-        input(`class` = { "border-1 rounded p-1 bg-gray-200" }, onInput = { nextTask(it) })
+        input(
+            `class` = { "border-1 rounded p-1 bg-gray-200" },
+            placeholder = { "Task" },
+            onInput = { nextTask = it },
+            value = { nextTask }
+        )
+        input(
+            `class` = { "border-1 rounded p-1 bg-gray-200" },
+            placeholder = { "index" },
+            onInput = { index = it?.toIntOrNull() ?: 0 },
+            value = { index.toString() }
+        )
         button(`class` = { "border-1 rounded p-1" }, onClick = { addTask() }) {
             +"Add"
         }

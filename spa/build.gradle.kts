@@ -14,13 +14,17 @@ teavm {
     all {
         mainClass = "eu.niton.ktx.spa.ApplicationKt"
     }
-    wasm {
+    wasmGC {
         addedToWebApp = true
     }
     js {
         addedToWebApp = true
+        sourceMap = true
     }
 }
+tasks.assemble { dependsOn(tasks.generateJavaScript) }
+tasks.assemble { dependsOn(tasks.generateWasmGC) }
+tasks.assemble { dependsOn(tasks.copyWasmGCRuntime) }
 
 repositories {
     mavenCentral()
