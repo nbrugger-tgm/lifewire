@@ -2,16 +2,13 @@ package eu.niton.ktx.spa
 
 import eu.niton.ktx.KtxElement
 import eu.nitonfx.signaling.api.ListSignal
+import org.teavm.jso.dom.html.HTMLDocument
 import org.teavm.jso.dom.html.HTMLElement
 import org.teavm.jso.dom.html.HTMLInputElement
-import org.teavm.jso.dom.xml.Element
 import org.teavm.jso.dom.xml.Node
 import org.teavm.jso.dom.xml.Text
-import java.util.function.Supplier
-import kotlin.jvm.functions.FunctionN
-import kotlin.properties.PropertyDelegateProvider
-import kotlin.properties.ReadOnlyProperty
 
+val document get() = HTMLDocument.current()
 sealed interface Slot {
     data class Single(val node: Node) : Slot
     data class List(val nodes: kotlin.collections.List<Slot>): Slot {
@@ -30,7 +27,7 @@ fun insert(function: ()-> KtxElement?,parent: HTMLElement, placeholder: Slot? = 
     }
     return Slot.Function(::plc)
 }
-fun  insertRaw(element: KtxElement?, parent: HTMLElement, placeholder: Slot? = null): Slot {
+private fun  insertRaw(element: KtxElement?, parent: HTMLElement, placeholder: Slot? = null): Slot {
     return when (element) {
         is KtxElement.Function -> insert(element.content, parent, placeholder)
         is KtxElement.List -> insert(element.elements, parent, placeholder)
@@ -39,7 +36,7 @@ fun  insertRaw(element: KtxElement?, parent: HTMLElement, placeholder: Slot? = n
         null -> insertNull(parent, placeholder)
     }
 }
-fun insert(string: KtxElement.Tag, parent: HTMLElement, placeholder: Slot? = null):Slot {
+private fun insert(string: KtxElement.Tag, parent: HTMLElement, placeholder: Slot? = null):Slot {
     val node = document.createElement(string.tag)
     if(placeholder != null) {
         replace(parent, placeholder, node)
@@ -67,7 +64,7 @@ fun insert(string: KtxElement.Tag, parent: HTMLElement, placeholder: Slot? = nul
     insertRaw(string.body, node)
     return Slot.Single(node)
 }
-fun insert(string: String, parent: HTMLElement, placeholder: Slot? = null): Slot {
+private fun insert(string: String, parent: HTMLElement, placeholder: Slot? = null): Slot {
     if(placeholder != null && placeholder is Slot.Single && placeholder.node is Text) {
         placeholder.node.textContent = string
         return placeholder
@@ -78,7 +75,7 @@ fun insert(string: String, parent: HTMLElement, placeholder: Slot? = null): Slot
 }
 
 
-fun insert(string: List<KtxElement?>, parent: HTMLElement, placeholder: Slot?):Slot {
+private fun insert(string: List<KtxElement?>, parent: HTMLElement, placeholder: Slot?):Slot {
     if(string is ListSignal<KtxElement?>) {
         val placeholder = placeholder?:insertNull(parent)
         string.onAdd { e,i ->
@@ -86,7 +83,7 @@ fun insert(string: List<KtxElement?>, parent: HTMLElement, placeholder: Slot?):S
             val slot = insertAfter(parent, placeholder, ktx, offset = i)
             cx.cleanup { remove(parent, slot) }
         }
-        return placeholder;
+        return placeholder
     } else {
         if(string.isEmpty()) return placeholder ?: insertNull(parent)
         var previous = insertRaw(string.first(), parent, placeholder)
@@ -99,7 +96,7 @@ fun insert(string: List<KtxElement?>, parent: HTMLElement, placeholder: Slot?):S
     }
 }
 
-fun insertNull(parent: HTMLElement, placeholder: Slot? = null): Slot {
+private fun insertNull(parent: HTMLElement, placeholder: Slot? = null): Slot {
     if(placeholder != null && placeholder is Slot.Single && placeholder.node.nodeType == Node.TEXT_NODE) {
         placeholder.node.textContent = ""
         return placeholder
@@ -108,7 +105,7 @@ fun insertNull(parent: HTMLElement, placeholder: Slot? = null): Slot {
     replace(parent, placeholder, node)
     return Slot.Single(node)
 }
-fun replace(parent: HTMLElement, slot: Slot?, node:Node) {
+private fun replace(parent: HTMLElement, slot: Slot?, node:Node) {
     when (slot) {
         is Slot.Single -> parent.replaceChild(node, slot.node)
         is Slot.List -> {
@@ -119,7 +116,7 @@ fun replace(parent: HTMLElement, slot: Slot?, node:Node) {
         null -> parent.appendChild(node)
     }
 }
-fun insertAfter(parent: HTMLElement, slot: Slot?, node:Node, offset: Int = 0) {
+private fun insertAfter(parent: HTMLElement, slot: Slot?, node:Node, offset: Int = 0) {
     when(slot) {
         is Slot.Function -> insertAfter(parent, slot(), node, offset)
         is Slot.List -> insertAfter(parent,slot.nodes.last(),node, offset)
@@ -136,12 +133,12 @@ fun insertAfter(parent: HTMLElement, slot: Slot?, node:Node, offset: Int = 0) {
         null -> parent.appendChild(node)
     }
 }
-fun insertAfter(parent: HTMLElement, slot: Slot?, node: KtxElement?, offset: Int = 0): Slot {
+private fun insertAfter(parent: HTMLElement, slot: Slot?, node: KtxElement?, offset: Int = 0): Slot {
     val placeholder = document.createTextNode("")
     insertAfter(parent, slot, placeholder, offset)
     return insertRaw(node, parent, Slot.Single(placeholder))
 }
-fun remove(parent: HTMLElement, slot: Slot) {
+private fun remove(parent: HTMLElement, slot: Slot) {
         when(slot) {
             is Slot.Single -> parent.removeChild(slot.node)
             is Slot.List -> slot.nodes.forEach { remove(parent, it) }

@@ -1,5 +1,12 @@
-package eu.niton.ktx.spa
+package eu.niton.ktx.spa.example
 
+import eu.niton.ktx.spa.For
+import eu.niton.ktx.spa.If
+import eu.niton.ktx.spa.component
+import eu.niton.ktx.spa.createSignal
+import eu.niton.ktx.spa.cx
+import eu.niton.ktx.spa.document
+import eu.niton.ktx.spa.insert
 import eu.niton.ktx.tags.BodyContent
 import eu.niton.ktx.tags.DivContent
 import eu.niton.ktx.tags.DivHtmlTag
@@ -13,38 +20,9 @@ import eu.niton.ktx.tags.h3
 import eu.niton.ktx.tags.input
 import eu.niton.ktx.tags.li
 import eu.niton.ktx.tags.ol
-import eu.niton.ktx.tags.render
 import eu.niton.ktx.tags.script
 import eu.niton.ktx.tags.span
-import eu.nitonfx.signaling.api.Context
 import eu.nitonfx.signaling.api.ListSignal
-import eu.nitonfx.signaling.api.Signal
-import eu.nitonfx.signaling.api.SignalLike
-import org.teavm.jso.dom.html.HTMLDocument
-import kotlin.properties.Delegates
-import kotlin.properties.ReadWriteProperty
-import kotlin.reflect.KProperty
-
-val cx = Context.global;
-internal val document get() = HTMLDocument.current()
-
-
-operator fun <T> SignalLike<T>.invoke(): T = get()
-operator fun <T> Signal<T>.invoke(value: T) = set(value)
-operator fun <T> Signal<T>.invoke(value: (T) -> T) = update(value)
-
-fun <T> createSignal(init: T): ReadWriteProperty<Any?, T> {
-    val signal = cx.createSignal(init)
-    return object : ReadWriteProperty<Any?, T> {
-        override fun getValue(thisRef: Any?, property: KProperty<*>): T {
-            return signal()
-        }
-
-        override fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
-            signal(value)
-        }
-    }
-}
 
 fun main() {
     val mountPoint = document.getElementById("app")
@@ -93,7 +71,7 @@ fun LiHtmlTag<*>.TaskView(task: Task, remove: () -> Unit) = component {
                 b(`class` = { "color-green mr-2" }) { +"done" }
             }
             +{ task.name }
-            button(`class` = { "bg-green-200 rounded border-1 p-1" }, onClick = { task.done != task.done }) {
+            button(`class` = { "bg-green-200 rounded border-1 p-1" }, onClick = { task.done =! task.done }) {
                 +{ if (!task.done) "Done" else "Still todo" }
             }
             button(`class` = { "bg-red-200 rounded border-1 p-1" }, onClick = { remove() }) {

@@ -10,6 +10,7 @@ includeBuild(file("./libs/signaling"))
 includeBuild(file("./libs/ktx"))
 include("example")
 include("spa")
+include("spa:example-application")
 
 rootProject.name="lifewire"
 

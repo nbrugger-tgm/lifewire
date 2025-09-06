@@ -8,7 +8,10 @@ plugins {
 }
 
 version = "0.1"
-group = "eu.niton"
+
+allprojects {
+    group = "eu.niton.lifewire"
+}
 
 val kotlinVersion = project.properties["kotlinVersion"]
 repositories {
