@@ -47,9 +47,11 @@ private fun insert(string: KtxElement.Tag, parent: HTMLElement, placeholder: Slo
         }
     }
     string.attributes.forEach { attr ->
-        val value = attr.value
-        if(value != null) cx.createEffect {
-            node.setAttribute(attr.key, value())
+        val valueFn = attr.value
+        if(valueFn != null) cx.createEffect {
+            val value = valueFn()
+            if(value != null) node.setAttribute(attr.key, value)
+            else node.removeAttribute(attr.key)
         }
     }
     string.eventListeners.forEach { listener ->
