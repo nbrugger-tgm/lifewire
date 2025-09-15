@@ -2,7 +2,6 @@ package eu.niton.lifewire.ktx
 
 import eu.niton.ktx.KtxElement
 import eu.niton.ktx.tags.BodyBody
-import eu.niton.ktx.tags.BodyContent
 import eu.niton.ktx.tags.content.render
 import eu.niton.lifewire.MainComponent
 import eu.niton.lifewire.Wire
@@ -14,8 +13,8 @@ import java.util.concurrent.TimeUnit
 
 class KTX(private val wire: Wire, private val cx: Context) {
     private val handlers = mutableMapOf<Long, (String?) -> Unit>()
-    var handlerId = 0L;
-    var tagId = 0L;
+    var handlerId = 0L
+    var tagId = 0L
 
     fun onEvent(id: Long, content: String?) {
         handlers[id]?.invoke(content)
@@ -93,7 +92,7 @@ class KTX(private val wire: Wire, private val cx: Context) {
         offset: Long? = null
     ) {
         val slot = slot ?: parent.nextSlot()
-        val id = id ?: tagId++;
+        val id = id ?: tagId++
         wire.insertText(component.string, id, parent.id, slot, offset)
         cx.cleanup {
             wire.remove(id)
@@ -102,7 +101,7 @@ class KTX(private val wire: Wire, private val cx: Context) {
 
     fun insert(component: KtxElement.Tag, parent: Parent, slot: Long? = null, id: Long? = null, offset: Long? = null) {
         val slot = slot ?: parent.nextSlot()
-        val id = id ?: tagId++;
+        val id = id ?: tagId++
         wire.insertTag(component.tag, id, parent.id, slot, offset)
         cx.cleanup {
             wire.remove(id)
