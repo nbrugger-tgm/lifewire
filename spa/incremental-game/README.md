@@ -1,0 +1,75 @@
+## Upgrades
+
+- Boiler
+  -[ ] Water Capacity
+  -[ ] Steam Capacity
+  -[ ] Insulation
+- Steam Engine
+  -[ ] Steam efficiency
+  -[ ] Maximum stress (active "devices")
+  - When `Forge` unlocked
+    -[ ] Max RPM/Speed (cost: gears)
+  - [ ] Jamming chance
+  - When Tool `Water cooler & hose` unlocked
+    -[ ] Condensed water return%
+- Water Well
+  - When tool `Waterpump` is unlocked
+    - When tool `Axle` is unlocked
+      -[ ] Jamming chance reduction (axle jams every now so often with the chance building up over time)
+    - When tool `Steam Drill` is unlocked
+      -[ ] Depth (waterflow/speed slowly goes down, increasing depth ups it again)
+- Bonfire
+  -[ ] Heat retention
+  -[ ] Heat per click
+  - When `Air pump` is unlocked
+    -[ ] Max fire it reaches
+    - When tool `Axle` is unlocked
+      -[ ] Jamming chance reduction (axle jams every now so often with the chance building up over time)
+  - When `charcoal oven` is unlocked
+    -[ ] Charcoal capacity
+    - When tool `conveyor` is unlocked
+      -[ ] Jamming chance
+- Mine
+  -[ ] Steam Effificiency
+  - When automatic drilling is unlocked
+    -[ ] Speed
+  - When tool `Washing pan` is unlocked
+    -[ ] Chance to find rare metals (polish the pan/titanium coating ...)
+  - When tool `titanium coating` is unlocked
+    - When tool `titanium spikes` is unlocked
+      -[ ] Depth gain speed
+  - When `Improvised Hammer` is unlocked
+    - When `Forged Hammer`
+      -[ ] Hammer sharpness (speed)
+      - When `Titanium Hammer` is unlocked
+        -[ ] Hammer endurance (durability)
+- Forest
+- Charcoal Oven
+  -[ ] Conversion efficiency (wood -> coal)
+  -[ ] Fuel Efficiency
+- Ore furnace
+- Forge
+## Tools
+ 
+- `Bowl`
+  - only without bucket 
+  - effect: Increases water per click from water well & duration
+  - cost: iron & wood
+- `Bucket` 
+  - effect: Increases water per click from water well & duration
+  - cost: iron & wood
+- `Improvised Hammer`
+  - Is Resource and  can be crafted multiple times 
+  - Unlocks stone cracking
+  - iron & wood
+  - `Washing Pan`
+    - Unlocks ore washing
+  - `Forged Hammer`
+    - Created in the forge
+    - `Titanium Hammer`
+- `Glass spiral`
+  - Gift from spiritual hermit found once in forest in exchange for water & firewood
+- `Hose`
+  - Collected in the forest
+- `WaterCooler`
+  - Crafted from glass spiral and hose

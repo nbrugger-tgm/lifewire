@@ -11,6 +11,7 @@ includeBuild(file("./libs/ktx"))
 include("example")
 include("spa")
 include("spa:example-application")
+include("spa:incremental-game")
 
 rootProject.name="lifewire"
 
