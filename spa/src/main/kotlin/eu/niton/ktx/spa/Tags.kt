@@ -5,6 +5,8 @@ import eu.niton.ktx.KtxElement
 import eu.niton.ktx.RenderableContent
 import eu.niton.ktx.render
 import eu.nitonfx.signaling.api.ListSignal
+import eu.nitonfx.signaling.api.MapSignal
+import eu.nitonfx.signaling.api.SignalLike
 
 fun interface ElseFn<T : RenderableContent> {
     fun Else(body: T.() -> Unit)
@@ -41,6 +43,31 @@ inline fun <C : Content<T>, T : RenderableContent, E> C.For(
             }
         )
     }
+}
+
+inline fun <C : Content<T>, T : RenderableContent, K,V> C.For(
+    crossinline elements: () -> Map<K,V>,
+    crossinline body: T.(K,V) -> Unit
+) {
+    +KtxElement.Function {
+        KtxElement.List(
+            elements().map { element ->
+                render(this) { body(element.key, element.value) }
+            }
+        )
+    }
+}
+
+
+inline fun <C : Content<T>, T : RenderableContent, K,V> C.For(
+    elements: MapSignal<K,V>,
+    crossinline body: T.(K, SignalLike<V>) -> Unit
+) {
+    +KtxElement.List(
+        elements.keySetSignal().map {
+            render(this) { body(it, elements.getSignal(it)) }
+        }
+    )
 }
 
 inline fun <C : Content<T>, T : RenderableContent> C.component(crossinline body: T.() -> Unit) {
