@@ -1,16 +1,11 @@
-package eu.niton.ktx.spa.example
+package eu.niton.ktx.incrementalgame
 
+import eu.niton.ktx.incrementalgame.utils.Task
 import eu.niton.ktx.spa.If
 import eu.niton.ktx.spa.createSignal
 import eu.niton.ktx.spa.cx
-import eu.niton.ktx.spa.example.utils.Task
-import eu.niton.ktx.spa.example.utils.discovery
-import eu.niton.ktx.spa.example.utils.localStorageBooleanSignal
-import eu.niton.ktx.spa.example.utils.localStorageIntSignal
 import eu.niton.ktx.tags.DivContent
-import eu.niton.ktx.tags.br
 import eu.niton.ktx.tags.div
-import eu.niton.ktx.tags.span
 import kotlin.time.Duration.Companion.seconds
 
 
@@ -27,7 +22,6 @@ fun DivContent.WaterWell() {
             waterFetchTime = 5
         }
     }
-    If({ game.discoveredWaterWell }) {
         ResourceBox(title = { "Water Well" }, `class` = {"flex flex-col gap-1"}) {
             div(`class` = { "flex flex-col gap-1" }) {
                 div(`class` = { "flex flex-row gap-1 justify-between" }) {
@@ -53,5 +47,5 @@ fun DivContent.WaterWell() {
                     color = { "bg-blue-400" })
             }
         }
-    }
+
 }

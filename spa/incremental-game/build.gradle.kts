@@ -3,8 +3,7 @@ plugins {
     id("org.teavm") version "0.12.3"
 }
 
-val server by sourceSets.registering {
-}
+
 
 dependencies {
     implementation(project(":spa"))
@@ -12,7 +11,7 @@ dependencies {
 
 teavm {
     all {
-        mainClass = "eu.niton.ktx.spa.example.ApplicationKt"
+        mainClass = "eu.niton.ktx.incrementalgame.ApplicationKt"
     }
     js {
         addedToWebApp = true
@@ -30,8 +29,7 @@ tasks.assemble { dependsOn(distWebapp) }
 
 tasks.register<JavaExec>("run") {
     mainModule = "jdk.httpserver"
-    args("-d", webAppDir.get())
-
+    args("-d", webAppDir.get(), "-b", "0.0.0.0")
 }
 
 repositories {

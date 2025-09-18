@@ -1,4 +1,4 @@
-package eu.niton.ktx.spa.example.utils
+package eu.niton.ktx.incrementalgame.utils
 
 import eu.niton.ktx.spa.createSignal
 import eu.niton.ktx.spa.cx

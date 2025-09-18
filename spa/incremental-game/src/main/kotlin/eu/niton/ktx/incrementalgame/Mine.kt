@@ -1,12 +1,11 @@
-package eu.niton.ktx.spa.example
+package eu.niton.ktx.incrementalgame
 
+import eu.niton.ktx.incrementalgame.utils.Task
+import eu.niton.ktx.incrementalgame.utils.localStorageBooleanSignal
+import eu.niton.ktx.incrementalgame.utils.localStorageFloatSignal
+import eu.niton.ktx.incrementalgame.utils.localStorageIntSignal
 import eu.niton.ktx.spa.If
 import eu.niton.ktx.spa.component
-import eu.niton.ktx.spa.example.utils.Task
-import eu.niton.ktx.spa.example.utils.discovery
-import eu.niton.ktx.spa.example.utils.localStorageBooleanSignal
-import eu.niton.ktx.spa.example.utils.localStorageFloatSignal
-import eu.niton.ktx.spa.example.utils.localStorageIntSignal
 import eu.niton.ktx.tags.DivContent
 import eu.niton.ktx.tags.div
 import eu.niton.ktx.tags.span
@@ -25,7 +24,6 @@ fun DivContent.Mine() = component {
 
     val washingSuccess = { 0.10f + log2(depth.toFloat()) / 20 }
 
-    If({ game.discoveredMine }) {
         val manualMine = Task({ (miningDuration * 1000).toInt().milliseconds }) {
             game.dirt.value += 1
             depth += 1
@@ -88,6 +86,6 @@ fun DivContent.Mine() = component {
                     }
                 }
             }
-        }
+
     }
 }

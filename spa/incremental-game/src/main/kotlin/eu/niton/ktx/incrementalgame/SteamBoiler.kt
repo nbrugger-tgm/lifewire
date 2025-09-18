@@ -1,10 +1,8 @@
-package eu.niton.ktx.spa.example
+package eu.niton.ktx.incrementalgame
 
-import eu.niton.ktx.spa.If
+import eu.niton.ktx.incrementalgame.utils.Process
 import eu.niton.ktx.spa.component
 import eu.niton.ktx.spa.cx
-import eu.niton.ktx.spa.example.utils.Process
-import eu.niton.ktx.spa.example.utils.discovery
 import eu.niton.ktx.tags.DivHtmlTag
 import eu.niton.ktx.tags.div
 import eu.niton.ktx.tags.span

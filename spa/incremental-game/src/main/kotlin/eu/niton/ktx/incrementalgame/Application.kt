@@ -1,10 +1,12 @@
-package eu.niton.ktx.spa.example
+package eu.niton.ktx.incrementalgame
 
 import eu.niton.ktx.StringContent
 import eu.niton.ktx.spa.*
-import eu.niton.ktx.spa.example.utils.localStorageBooleanSignal
-import eu.niton.ktx.spa.example.utils.localStorageFloatSignal
-import eu.niton.ktx.spa.example.utils.localStorageIntSignal
+import eu.niton.ktx.incrementalgame.components.TextTooltip
+import eu.niton.ktx.incrementalgame.components.Tooltip
+import eu.niton.ktx.incrementalgame.utils.localStorageBooleanSignal
+import eu.niton.ktx.incrementalgame.utils.localStorageFloatSignal
+import eu.niton.ktx.incrementalgame.utils.localStorageIntSignal
 import eu.niton.ktx.tags.*
 import eu.niton.ktx.tags.content.render
 import org.teavm.jso.browser.Window
@@ -15,25 +17,29 @@ val game by lazy { Game() }
 fun main() {
     val mountPoint = document.getElementById("app")
     cx.run {
-        print("Load game : $game")
+        println("Load game : $game")
         insert({ render(BodyContent::App) }, mountPoint)
     }
 }
 
 
-fun StringContent<*>.TypingAnimation(text: () -> String) {
+fun StringContent<*>.TypingAnimation(onDone:(()->Unit)?=null,speed:(()->Int) = {2},text: () -> String) {
     val displayedText = cx.createSignal("")
 
     cx.createEffect {
         var timeout: Int? = null;
         fun type(targetText: String) {
-            if (targetText == displayedText.untracked) return;
+            if (targetText == displayedText.untracked) {
+                onDone?.invoke()
+                return;
+            }
             if (targetText.startsWith(displayedText.untracked)) {
                 displayedText.update { it + targetText.substringAfter(displayedText.untracked)[0] }
             } else {
                 displayedText.set(displayedText.untracked.dropLast(1))
             }
-            timeout = Window.setTimeout({ type(text()) }, 50 + 50 * Math.random())
+            val delay = 100/speed()
+            timeout = Window.setTimeout({ type(text()) }, delay + delay * Math.random())
         }
         type(text())
         cx.cleanup { if (timeout != null) Window.clearTimeout(timeout) }
@@ -45,19 +51,20 @@ fun StringContent<*>.TypingAnimation(text: () -> String) {
 val flexRow = "flex flex-row justify-between"
 
 class Resource(val name: String, max: Int,defaultValue:Float?=null) {
-    var value by localStorageFloatSignal(name, defaultValue?:0f)
+    var value by localStorageFloatSignal(name, defaultValue ?: 0f)
     var max by localStorageIntSignal("${name}_max", max)
 
     init {
         cx.createEffect { if (value > max) value = this.max.toFloat() }
     }
 }
+data class Food(val resource: Resource, val nutrition:Int)
 
 class Upgrade(name: String, val costs: Map<Resource, Float>) {
     private var crafted by localStorageBooleanSignal("${name}_upgrade", false)
     val isCrafted get() = crafted
     fun purchase() {
-        println("try to purchase upgrade for ${costs}")
+        println("try to purchase upgrade for $costs")
         if (crafted) {
             println("But it is already crafted")
             return
@@ -73,27 +80,6 @@ class Upgrade(name: String, val costs: Map<Resource, Float>) {
     }
 
     private fun canAfford() = costs.isEmpty() || costs.all { (res, value) -> res.value >= value }
-}
-
-inline fun SpanHtmlTag<*>.TextTooltip(
-    noinline text: () -> String,
-    noinline `class`: (() -> String)? = null,
-    crossinline hover: SpanBody
-) {
-    Tooltip(tooltip = { +text }, `class` = `class`, hover = hover)
-}
-
-inline fun SpanHtmlTag<*>.Tooltip(
-    crossinline tooltip: SpanBody,
-    noinline `class`: (() -> String)? = null,
-    crossinline hover: SpanBody
-) {
-    span(`class` = { "group relative ${`class`?.invoke()}" }) {
-        hover()
-        span(`class` = { "absolute transform left-1/2 -translate-x-1/2 w-max max-w-60 top-full mb-2 z-10 rounded border bg-gray-200 shadow-xl p-2 hidden group-hover:block" }) {
-            tooltip()
-        }
-    }
 }
 
 fun reset() {
@@ -125,8 +111,12 @@ fun BodyContent.App() {
             If({ game.discoveredSteamBoiler }) {
                 SteamBoiler()
             }
-            WaterWell()
-            Mine()
+            If({ game.discoveredWaterWell }) {
+                WaterWell()
+            }
+            If({ game.discoveredMine }) {
+                Mine()
+            }
         }
     }
 }
@@ -203,30 +193,36 @@ fun DivHtmlTag<*>.ProgressBar(
     max: () -> Int,
     color: () -> String = { "bg-green-400" },
     displayText: () -> Boolean = { true },
-    insideText: (()->String?)? = null
+    insideText: (()->String?)? = null,
+    `class`: (() -> String)?=null
 ) = component {
     val valueStr = { value().toInt().toString() }
     val maxStr = { max().toString() }
-    div(`class` = { "flex flex-row gap-2" }) {
-        If(displayText) {
+    val bar: DivHtmlTag<*>.(`class`: (() -> String)?)->Unit = { `class` ->
+        div(`class` = { "border-1 min-w-[100px] ${`class`?.invoke()?:""}" }) {
+            If({ insideText != null && insideText() != null }) {
+                span(`class` = { "absolute" }) { +{ insideText?.invoke() ?: "" } }
+            }
+            div(
+                `class` = { " min-h-3 height-full h-full ${color()} text-white" },
+                style = { "width: ${100 * (value() / max().toDouble())}%;" }) {
+                If({ insideText != null && insideText() != null }) {
+                    +{ insideText?.invoke() ?: "" }
+                }
+            }
+        }
+    }
+    if(displayText()) {
+        div(`class` = { "flex flex-row gap-2 ${`class`?.invoke()?:""}" }) {
             span {
                 +{ valueStr().padStart(maxStr().length) }
                 +"/"
                 +maxStr
             }
+            bar({ "grow" })
         }
-        div(`class` = { "border-1 min-w-[100px] grow" }) {
-            If({insideText != null && insideText() != null}) {
-                span(`class` = {"absolute z-9"}){+{ insideText?.invoke()?:"" }}
-            }
-            div(
-                `class` = { " min-h-3 height-full h-full ${color()} text-white" },
-                style = { "width: ${100 * (value() / max().toDouble())}%;" }) {
-                If({insideText != null && insideText() != null}) {
-                    +{ insideText?.invoke()?:"" }
-                }
-            }
-        }
+    } else {
+        bar(`class`)
     }
 }
 
