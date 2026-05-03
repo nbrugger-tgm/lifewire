@@ -65,10 +65,7 @@ private fun insert(string: KtxElement.Tag, parent: HTMLElement, placeholder: Slo
     string.eventListeners.forEach { listener ->
         val func = listener.value
         if (func != null) {
-            node.addEventListener(listener.key.replace("on", "")) {
-                if (node is HTMLInputElement) func(node.value)
-                else func(null)
-            }
+            node.addEventListener(listener.key.replace("on", ""),func)
         }
     }
     insertRaw(string.body, node)
