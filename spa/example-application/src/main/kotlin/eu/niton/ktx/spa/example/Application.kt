@@ -1,28 +1,10 @@
 package eu.niton.ktx.spa.example
 
-import eu.niton.ktx.spa.For
-import eu.niton.ktx.spa.If
-import eu.niton.ktx.spa.component
-import eu.niton.ktx.spa.createSignal
-import eu.niton.ktx.spa.cx
-import eu.niton.ktx.spa.document
-import eu.niton.ktx.spa.insert
-import eu.niton.ktx.tags.BodyContent
-import eu.niton.ktx.tags.DivContent
-import eu.niton.ktx.tags.DivHtmlTag
-import eu.niton.ktx.tags.LiHtmlTag
-import eu.niton.ktx.tags.b
-import eu.niton.ktx.tags.button
-import eu.niton.ktx.tags.content.render
-import eu.niton.ktx.tags.div
-import eu.niton.ktx.tags.h1
-import eu.niton.ktx.tags.h3
-import eu.niton.ktx.tags.input
-import eu.niton.ktx.tags.li
-import eu.niton.ktx.tags.ol
-import eu.niton.ktx.tags.script
-import eu.niton.ktx.tags.span
+import eu.niton.ktx.spa.*
+import eu.niton.ktx.spa.tags.*
+import eu.niton.ktx.spa.tags.content.render
 import eu.nitonfx.signaling.api.ListSignal
+import org.teavm.jso.dom.html.HTMLInputElement
 
 fun main() {
     val mountPoint = document.getElementById("app")
@@ -95,13 +77,13 @@ fun DivHtmlTag<*>.TodoCreator(onAdd: (Task, Int) -> Unit) = component {
         input(
             `class` = { "border-1 rounded p-1 bg-gray-200" },
             placeholder = { "Task" },
-            onInput = { nextTask = it },
+            onInput = { nextTask = (it.target as HTMLInputElement).value },
             value = { nextTask }
         )
         input(
             `class` = { "border-1 rounded p-1 bg-gray-200" },
             placeholder = { "index" },
-            onInput = { index = it?.toIntOrNull() ?: 0 },
+            onInput = { index = (it.target as HTMLInputElement).value.toIntOrNull() ?: 0 },
             value = { index.toString() }
         )
         button(`class` = { "border-1 rounded p-1" }, onClick = { addTask() }) {

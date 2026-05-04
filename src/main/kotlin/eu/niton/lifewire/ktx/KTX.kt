@@ -1,8 +1,8 @@
 package eu.niton.lifewire.ktx
 
 import eu.niton.ktx.KtxElement
-import eu.niton.ktx.tags.BodyBody
-import eu.niton.ktx.tags.content.render
+import eu.niton.lifewire.ktx.tags.BodyBody
+import eu.niton.lifewire.ktx.tags.content.render
 import eu.niton.lifewire.MainComponent
 import eu.niton.lifewire.Wire
 import eu.nitonfx.signaling.api.Context
@@ -12,12 +12,12 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
 class KTX(private val wire: Wire, private val cx: Context) {
-    private val handlers = mutableMapOf<Long, (String?) -> Unit>()
+    private val handlers = mutableMapOf<Long, (Event) -> Unit>()
     var handlerId = 0L
     var tagId = 0L
 
     fun onEvent(id: Long, content: String?) {
-        handlers[id]?.invoke(content)
+        handlers[id]?.invoke(content?.let { Event.Input(it) } ?:Event.Default)
     }
 
     class Parent(val id: Long) {
