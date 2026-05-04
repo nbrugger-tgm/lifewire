@@ -4,7 +4,7 @@ import eu.niton.ktx.KtxElement
 import eu.niton.lifewire.ktx.tags.BodyBody
 import eu.niton.lifewire.ktx.tags.content.render
 import eu.niton.lifewire.MainComponent
-import eu.niton.lifewire.Wire
+import eu.niton.lifewire.transport.Wire
 import eu.nitonfx.signaling.api.Context
 import eu.nitonfx.signaling.api.ListSignal
 import java.util.concurrent.Executors

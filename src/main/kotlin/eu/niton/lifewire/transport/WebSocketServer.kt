@@ -1,6 +1,7 @@
 package eu.niton.lifewire
 
 import eu.niton.lifewire.ktx.KTX
+import eu.niton.lifewire.transport.Wire
 import eu.nitonfx.signaling.api.Context
 import io.micronaut.scheduling.annotation.Async
 import io.micronaut.websocket.WebSocketSession

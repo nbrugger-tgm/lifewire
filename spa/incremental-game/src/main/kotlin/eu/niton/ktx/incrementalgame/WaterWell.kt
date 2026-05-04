@@ -1,13 +1,11 @@
 package eu.niton.ktx.incrementalgame
 
 import eu.niton.ktx.incrementalgame.utils.Task
-import eu.niton.ktx.spa.If
 import eu.niton.ktx.spa.createSignal
 import eu.niton.ktx.spa.cx
 import eu.niton.ktx.spa.tags.DivContent
 import eu.niton.ktx.spa.tags.div
 import kotlin.time.Duration.Companion.seconds
-
 
 
 fun DivContent.WaterWell() {

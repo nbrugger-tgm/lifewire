@@ -1,6 +1,5 @@
-package eu.niton.lifewire
+package eu.niton.lifewire.transport
 
-import eu.niton.lifewire.ktx.KTX
 import io.micronaut.websocket.WebSocketSession
 
 interface Wire {

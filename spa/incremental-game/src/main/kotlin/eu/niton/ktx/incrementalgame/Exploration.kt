@@ -19,7 +19,7 @@ import kotlin.time.Duration.Companion.seconds
 
 fun DivHtmlTag<*>.Exploration() {
     val mushrooms = game.mushrooms
-    var mushroomGrow by createSignal(0f);
+    var mushroomGrow by createSignal(0f)
     val mushroomProgress = Process({ 90.seconds }, { mushroomGrow += it })
     cx.createEffect {
         if (mushroomGrow >= 1f) {

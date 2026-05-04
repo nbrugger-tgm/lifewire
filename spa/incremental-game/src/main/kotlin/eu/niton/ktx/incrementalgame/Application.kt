@@ -27,11 +27,11 @@ fun StringContent<*>.TypingAnimation(onDone:(()->Unit)?=null,speed:(()->Int) = {
     val displayedText = cx.createSignal("")
 
     cx.createEffect {
-        var timeout: Int? = null;
+        var timeout: Int? = null
         fun type(targetText: String) {
             if (targetText == displayedText.untracked) {
                 onDone?.invoke()
-                return;
+                return
             }
             if (targetText.startsWith(displayedText.untracked)) {
                 displayedText.update { it + targetText.substringAfter(displayedText.untracked)[0] }
