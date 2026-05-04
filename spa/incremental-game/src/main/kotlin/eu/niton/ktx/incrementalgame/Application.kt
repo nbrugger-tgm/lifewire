@@ -7,8 +7,8 @@ import eu.niton.ktx.incrementalgame.components.Tooltip
 import eu.niton.ktx.incrementalgame.utils.localStorageBooleanSignal
 import eu.niton.ktx.incrementalgame.utils.localStorageFloatSignal
 import eu.niton.ktx.incrementalgame.utils.localStorageIntSignal
-import eu.niton.ktx.tags.*
-import eu.niton.ktx.tags.content.render
+import eu.niton.ktx.spa.tags.*
+import eu.niton.ktx.spa.tags.content.render
 import org.teavm.jso.browser.Window
 
 val game by lazy { Game() }

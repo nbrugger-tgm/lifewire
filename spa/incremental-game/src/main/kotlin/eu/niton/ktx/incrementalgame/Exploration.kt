@@ -8,10 +8,10 @@ import eu.niton.ktx.incrementalgame.utils.localStorageBooleanSignal
 import eu.niton.ktx.incrementalgame.utils.localStorageIntSignal
 import eu.niton.ktx.spa.*
 import eu.niton.ktx.spa.invoke
-import eu.niton.ktx.tags.DivContent
-import eu.niton.ktx.tags.DivHtmlTag
-import eu.niton.ktx.tags.div
-import eu.niton.ktx.tags.span
+import eu.niton.ktx.spa.tags.DivContent
+import eu.niton.ktx.spa.tags.DivHtmlTag
+import eu.niton.ktx.spa.tags.div
+import eu.niton.ktx.spa.tags.span
 import eu.nitonfx.signaling.api.MapSignal
 import org.teavm.jso.browser.Window
 import kotlin.math.min

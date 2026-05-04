@@ -3,9 +3,9 @@ package eu.niton.ktx.incrementalgame
 import eu.niton.ktx.incrementalgame.utils.Process
 import eu.niton.ktx.spa.component
 import eu.niton.ktx.spa.cx
-import eu.niton.ktx.tags.DivHtmlTag
-import eu.niton.ktx.tags.div
-import eu.niton.ktx.tags.span
+import eu.niton.ktx.spa.tags.DivHtmlTag
+import eu.niton.ktx.spa.tags.div
+import eu.niton.ktx.spa.tags.span
 import kotlin.math.max
 import kotlin.time.Duration.Companion.seconds
 

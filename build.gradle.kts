@@ -32,7 +32,9 @@ dependencies {
     testImplementation("io.micronaut:micronaut-http-client")
 
     implementation("eu.nitonfx.signaling:lib")
-    implementation("eu.niton.ktx:html5")
+
+    ksp("eu.niton.ktx:processor")
+    compileOnly("eu.niton.ktx:annotations")
 }
 
 java {

@@ -5,9 +5,9 @@ import eu.niton.ktx.incrementalgame.utils.localStorageIntSignal
 import eu.niton.ktx.spa.component
 import eu.niton.ktx.spa.createMemo
 import eu.niton.ktx.spa.cx
-import eu.niton.ktx.tags.DivContent
-import eu.niton.ktx.tags.div
-import eu.niton.ktx.tags.span
+import eu.niton.ktx.spa.tags.DivContent
+import eu.niton.ktx.spa.tags.div
+import eu.niton.ktx.spa.tags.span
 import kotlin.math.max
 import kotlin.time.Duration.Companion.minutes
 

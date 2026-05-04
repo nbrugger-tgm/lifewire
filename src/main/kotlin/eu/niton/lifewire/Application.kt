@@ -1,6 +1,7 @@
 package eu.niton.lifewire
 
-import eu.niton.ktx.tags.*
+import eu.niton.lifewire.ktx.Event
+import eu.niton.lifewire.ktx.tags.*
 import eu.niton.lifewire.ktx.For
 import eu.niton.lifewire.ktx.If
 import eu.niton.lifewire.ktx.component
@@ -73,7 +74,7 @@ fun DivHtmlTag<*>.TodoCreator(cx: Context, onAdd: (Task) -> Unit) = component {
     }
     div {
         span { +"Neuen Task anlegen" }
-        input(`class` = {"border-1 rounded p-1 bg-gray-200"},onInput = { nextTask(it) })
+        input(`class` = {"border-1 rounded p-1 bg-gray-200"},onInput = { if(it is Event.Input) nextTask(it.value) })
         button(`class` = {"border-1 rounded p-1"}, onClick = { addTask() }) {
             +"Add"
         }

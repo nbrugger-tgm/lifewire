@@ -32,7 +32,7 @@ interface Wire {
             else session.sendAsync("a${tag}-$key")
         }
         override fun setHandler(tag: Long, key: String, handlerId: Long) {
-            session.sendAsync("a${tag}+$key=e($handlerId,event.target.value)")
+            session.sendAsync("a${tag}+$key=e($handlerId,event.target?.value)")
         }
     }
 }

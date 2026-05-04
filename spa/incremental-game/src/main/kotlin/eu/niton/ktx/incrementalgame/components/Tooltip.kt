@@ -1,8 +1,8 @@
 package eu.niton.ktx.incrementalgame.components
 
-import eu.niton.ktx.tags.SpanBody
-import eu.niton.ktx.tags.SpanHtmlTag
-import eu.niton.ktx.tags.span
+import eu.niton.ktx.spa.tags.SpanBody
+import eu.niton.ktx.spa.tags.SpanHtmlTag
+import eu.niton.ktx.spa.tags.span
 
 inline fun SpanHtmlTag<*>.TextTooltip(
     noinline text: () -> String,
