@@ -31,7 +31,7 @@ fun DivContent.Mine() = component {
 
         fun mine() {
             val steamCost = steamConsumption * miningDuration
-            if (game.steam.value <= steamCost) return;
+            if (game.steam.value <= steamCost) return
             game.steam.value -= steamCost
             manualMine.perform()
         }

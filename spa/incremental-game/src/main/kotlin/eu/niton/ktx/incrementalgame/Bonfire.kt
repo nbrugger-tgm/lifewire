@@ -12,8 +12,8 @@ import kotlin.math.max
 import kotlin.time.Duration.Companion.minutes
 
 fun DivContent.Bonfire() = component {
-    val fire = game.fire;
-    val wood = game.wood;
+    val fire = game.fire
+    val wood = game.wood
     var fireDissipation by localStorageIntSignal("fire_dissipation", 500)
     val dissipateFire = Process({ 1.minutes / fireDissipation }) {
         fire.value = max(0f, fire.value - (1 * it))
