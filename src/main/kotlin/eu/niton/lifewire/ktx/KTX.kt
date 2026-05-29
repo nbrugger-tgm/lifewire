@@ -30,8 +30,6 @@ class KTX(private val wire: Wire, private val cx: Context) {
         cx.run {
             val body : BodyBody = { mainComponent(cx) }
             insert({ render(body) }, Parent(tagId++))
-        }.let {
-            scheduling.schedule({print(it.formatAsTree())},30, TimeUnit.SECONDS)
         }
     }
 
