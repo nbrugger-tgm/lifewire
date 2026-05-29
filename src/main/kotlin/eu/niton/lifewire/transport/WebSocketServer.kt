@@ -9,11 +9,15 @@ import io.micronaut.websocket.annotation.OnClose
 import io.micronaut.websocket.annotation.OnMessage
 import io.micronaut.websocket.annotation.OnOpen
 import io.micronaut.websocket.annotation.ServerWebSocket
+import java.util.function.Supplier
 import kotlin.collections.set
 
 @ServerWebSocket("/wire")
-open class WebSocketServer {
+open class WebSocketServer(
+    val contextFactory: Supplier<Context>
+) {
     val sessions = mutableMapOf<String, KTX>()
+
     @OnOpen
     fun open(session: WebSocketSession) {
        start(session)
@@ -21,7 +25,7 @@ open class WebSocketServer {
 
     @Async
     open fun start(session: WebSocketSession){
-        val context = Context.create()
+        val context = contextFactory.get()
         val ktx = KTX(Wire.Minified(session), context)
         sessions[session.id] = ktx
         ktx.run(mainComponent)
