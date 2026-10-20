@@ -100,7 +100,7 @@ fun BodyContent.App() {
             h3(`class` = { "text-xl p-0" }) {
                 +"Dialog"
             }
-            TypingAnimation { game.dialogText }
+            TypingAnimation(speed = {3}) { game.dialogText }
         }
         div(`class` = { "flex flex-row flex-wrap gap-2" }) {
             Toolbox()

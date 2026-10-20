@@ -7,7 +7,6 @@ import eu.niton.ktx.incrementalgame.utils.Process
 import eu.niton.ktx.incrementalgame.utils.localStorageBooleanSignal
 import eu.niton.ktx.incrementalgame.utils.localStorageIntSignal
 import eu.niton.ktx.spa.*
-import eu.niton.ktx.spa.invoke
 import eu.niton.ktx.spa.tags.DivContent
 import eu.niton.ktx.spa.tags.DivHtmlTag
 import eu.niton.ktx.spa.tags.div
@@ -68,7 +67,10 @@ private fun DivHtmlTag<*>.ExplorerOverlay() {
         if (v() < 0) inventory[k] = 0f
     }
     inventory.onPut { k, v ->
-        if (v() > 0) Window.current().localStorage.setItem("backpack_${k.name}", v().toString())
+        if (v() > 0) {
+            Window.current().localStorage.setItem("backpack_${k.name}", v().toString())
+            cx.cleanup { Window.current().localStorage.removeItem("backpack_${k.name}") }
+        }
         else Window.current().localStorage.removeItem("backpack_${k.name}")
     }
     for (i in 0..<Window.current().localStorage.length) {
@@ -137,28 +139,13 @@ private fun DivHtmlTag<*>.ExplorationPreparation(
                 displayText = { false })
         }
         div(`class` = { "border-b border-gray-300" }) {}
-        div(`class` = { "flex flex-col gap-1" }) {
+        div(`class` = { "grid grid-cols-[min-content_auto] gap-1" }) {
             For({ game.foods }) { name, food ->
-                div(`class` = { "flex flex-row gap-2 items-center" }) {
-                    +name
-                    div(`class` = { "flex flex-row gap-1" }) {
-                        span(
-                            `class` = { "border text-sm px-1 bg-gray-100 cursor-pointer" },
-                            onClick = { inventory[food.resource] = inventory[food.resource]?.minus(1f) ?: 0f }) { +"-" }
-                        ProgressBar(
-                            value = { inventory[food.resource] ?: 0f },
-                            max = { food.resource.value.toInt() },
-                            displayText = { false },
-                            insideText = { (inventory[food.resource] ?: 0).toString() },
-                            color = { "bg-orange-700" }
-                        )
-                        span(
-                            `class` = { "border text-sm px-1 bg-gray-100 cursor-pointer" },
-                            onClick = {
-                                if (inventoryHasSpace && ((inventory[food.resource] ?: 0f) < food.resource.value))
-                                    inventory[food.resource] = inventory[food.resource]?.plus(1f) ?: 1f
-                            }) { +"+" }
-                    }
+                If({ food.resource.value > 0 }) {
+                    FoodSlider(
+                        name = { name }, food = food, inventory = inventory,
+                        inventoryHasSpace = { inventoryHasSpace }
+                    )
                 }
             }
         }
@@ -169,10 +156,11 @@ private fun DivHtmlTag<*>.ExplorationPreparation(
     }
 }
 
+
 private fun DivContent.Exploration(
     inventory: MapSignal<Resource, Float>,
     inventoryMax: () -> Int,
-    onEnd: ()->Unit
+    onEnd: () -> Unit
 ) = component {
     var stamina by game.exploration::stamina
     var zone by game.exploration::zone
@@ -180,8 +168,8 @@ private fun DivContent.Exploration(
     var event by game.exploration::event
     var dist by createSignal(0)
     var ravensFed by localStorageIntSignal("fed_ravens", 0)
-    var groundSearched by localStorageBooleanSignal("ground_searched",false)
-    var crowFed by localStorageBooleanSignal("crow_fed",false)
+    var groundSearched by localStorageBooleanSignal("ground_searched", false)
+    var crowFed by localStorageBooleanSignal("crow_fed", false)
     val eventChances by createMemo {
         val eventChance = (1 - (1 / (dist / 4 + 1)))
         val map = mutableMapOf<Event, Float>()
@@ -189,12 +177,12 @@ private fun DivContent.Exploration(
         map[Event.NONE] = noEventChance
         map[Event.GOOSE_WAS_NEVER_AN_OPTION] = 0.2f * eventChance
         map[Event.WOODPILE] = 0.4f * eventChance
-        map[Event.RAVEN] = 0.4f/(ravensFed+1) * eventChance
+        map[Event.RAVEN] = 0.4f / (ravensFed + 1) * eventChance
         map
     }
 
-    inventory.onPut { k,v ->
-        if (v() > k.max-k.value) inventory[k] = k.max-k.value
+    inventory.onPut { k, v ->
+        if (v() > k.max - k.value) inventory[k] = k.max - k.value
     }
 
     fun rollEvent(): Event {
@@ -202,39 +190,41 @@ private fun DivContent.Exploration(
         val roll = Math.random()
         eventChances.forEach { (event, chance) ->
             pointer += chance
-            if(roll<pointer) return event
+            if (roll < pointer) return event
         }
         throw IllegalStateException("No event rolled?!")
     }
 
-    val freeSpace = {inventoryMax()-inventory.values.sum()}
-    fun addToInventory(res:Resource,berries: Float) {
+    val freeSpace = { inventoryMax() - inventory.values.sum() }
+    fun addToInventory(res: Resource, berries: Float) {
         min(freeSpace(), berries).let {
             inventory[res] = inventory[res]?.plus(it) ?: it
         }
     }
-    fun searchGround(){
+
+    fun searchGround() {
         groundSearched = true
         val roll = Math.random()
 
-        if(roll > 1-0.4) {
+        if (roll > 1 - 0.4) {
             dialogText = "Beneath the leaves there were a few loose branches"
-            addToInventory(game.wood, (2f+(3*Math.random()).toInt()))
-        } else if(roll > 1-0.4-0.2) {
+            addToInventory(game.wood, (2f + (3 * Math.random()).toInt()))
+        } else if (roll > 1 - 0.4 - 0.2) {
             dialogText = "You notice that the ground is soft, might be similar to clay."
             addToInventory(game.clay, 1f)
-        } else if(roll > 1f-0.4f-0.2f-0.15f) {
+        } else if (roll > 1f - 0.4f - 0.2f - 0.15f) {
             val berries = (1f + (3f * Math.random()).toInt())
             dialogText = "You find and harvest a berry bush with $berries berries"
-            addToInventory(game.berries,berries)
+            addToInventory(game.berries, berries)
         } else {
             dialogText = "There seems to be nothing of use to you ..."
         }
     }
 
-    fun feedCrow(res: Map.Entry<String,Food>) {
+    fun feedCrow(res: Map.Entry<String, Food>) {
         crowFed = true
-        dialogText = "As soon as you throw the crow a pice of ${res.key}, the crow flies down picks it off the ground and disapears into the forest"
+        dialogText =
+            "As soon as you throw the crow a pice of ${res.key}, the crow flies down picks it off the ground and disapears into the forest"
         ravensFed += 1
     }
 
@@ -244,17 +234,21 @@ private fun DivContent.Exploration(
         dist++
         //FOREST ZONE
         event = rollEvent()
-        when(event) {
+        when (event) {
             Event.GOOSE_WAS_NEVER_AN_OPTION -> {
-                dialogText = "You hear a goose screaming. \"In the forest?\" you think as you suddenly see it running towards you. .... with a knive in its mouth!? And its shouting at you \"PEACE WAS NEVER AN OPTION\""
+                dialogText =
+                    "You hear a goose screaming. \"In the forest?\" you think as you suddenly see it running towards you. .... with a knive in its mouth!? And its shouting at you \"PEACE WAS NEVER AN OPTION\""
             }
+
             Event.WOODPILE -> {
                 dialogText = "You find a tree that fell and burst into many pieces, that will be a lot to carry!"
             }
+
             Event.RAVEN -> {
                 dialogText = "As you search the forest you spot a crow looking hungry at your food"
                 crowFed = false
             }
+
             Event.NONE -> {
                 dialogText = "You wander deeper into the forest"
                 groundSearched = false
@@ -269,7 +263,7 @@ private fun DivContent.Exploration(
             }
             inventory.clear()
             onEnd()
-        }catch(e: Exception) {
+        } catch (e: Exception) {
             println("WHY DO WE FAIL???")
             e.printStackTrace()
             println(e.message)
@@ -278,10 +272,10 @@ private fun DivContent.Exploration(
     }
 
 
-    fun collectWoodPile(){
-        while(stamina > 0.5f && inventory.values.sum() < inventoryMax()) {
+    fun collectWoodPile() {
+        while (stamina > 0.5f && inventory.values.sum() < inventoryMax()) {
             stamina -= 0.5f
-            inventory[game.wood] = inventory[game.wood]?.plus(1)?:1f
+            inventory[game.wood] = inventory[game.wood]?.plus(1) ?: 1f
         }
     }
 
@@ -291,40 +285,45 @@ private fun DivContent.Exploration(
             inventory[it.resource] = inventory[it.resource]?.minus(1)
         }
     }
+
     val hasFood by createMemo { game.foods.values.map { inventory[it.resource] ?: 0f }.sum() > 0f }
     cx.createEffect {
-        if (stamina == 0f && !hasFood) dialogText = "As your legs grow weak you realize that your food supplies are used up..."
+        if (stamina == 0f && !hasFood) dialogText =
+            "As your legs grow weak you realize that your food supplies are used up..."
     }
     val playerChoices by createMemo {
-        val choices = mutableMapOf<String, ()->Unit>()
+        val choices = mutableMapOf<String, () -> Unit>()
         if (stamina == 0f && !hasFood) {
             for (i in 1..5) choices["Return to camp"] = ::endRun
         }
-        when(event) {
+        when (event) {
             Event.GOOSE_WAS_NEVER_AN_OPTION -> {
                 choices["RUN!"] = ::endRun
                 return@createMemo choices
             }
+
             Event.WOODPILE -> {
-                if(stamina>=2) {
+                if (stamina >= 2) {
                     choices["Pick up all the logs (1 Wood per 0.5 Stamina)"] = ::collectWoodPile
                 }
             }
+
             Event.RAVEN -> {
-                if(!crowFed) game.foods.filter{ (inventory[it.value.resource] ?: 0f) > 0f }.forEach {
+                if (!crowFed) game.foods.filter { (inventory[it.value.resource] ?: 0f) > 0f }.forEach {
                     choices["Feed the Crow (1 ${it.key})"] = { feedCrow(it) }
                 }
             }
+
             Event.NONE -> {
-                if(!groundSearched && stamina>=0.5f && inventory.values.sum()<inventoryMax()) {
+                if (!groundSearched && stamina >= 0.5f && inventory.values.sum() < inventoryMax()) {
                     choices["Search forest ground (0.5 stamina)"] = ::searchGround
                 }
             }
         }
-        if(stamina >= 1) {
+        if (stamina >= 1) {
             choices["Go further (1 Stamina)"] = ::doStep
         } else {
-            game.foods.filter{ (inventory[it.value.resource] ?: 0f) > 0f }.forEach {
+            game.foods.filter { (inventory[it.value.resource] ?: 0f) > 0f }.forEach {
                 choices["Eat 1 ${it.key} (+${it.value.nutrition} Stamina)"] = { eat(it.value.resource) }
             }
         }
@@ -339,7 +338,7 @@ private fun DivContent.Exploration(
         }
     }
     div(`class` = { "border rounded bg-gray-50 text-md p-2" }) {
-        TypingAnimation(speed={ 6 }) { dialogText }
+        TypingAnimation(speed = { 6 }) { dialogText }
     }
     div(`class` = { "flex flex-row gap-2" }) {
         div(`class` = { "flex flex-col gap-1 grow" }) {
@@ -363,7 +362,7 @@ private fun DivContent.Exploration(
             div(`class` = { "border border-gray-200 p-2" }) {
                 span(`class` = { "text-xl" }) { +"Food" }
                 For(inventory) { res, value ->
-                    If({ game.foods.values.any { it.resource == res } }) {
+                    If({ game.foods.values.any { it.resource == res } && value() > 0}) {
                         div(`class` = { "ml-2 flex flex-row justify-between" }) {
                             Button(onClick = { eat(res) }) { +"Eat" }
                             span { +res.name }

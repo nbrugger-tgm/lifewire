@@ -21,8 +21,8 @@ class Game {
     val heat = Resource("heat", 150)
     val wood = Resource("wood", 30, defaultValue = 25f)
     val clay = Resource("clay", 40)
-    val mushrooms = Resource("mushrooms", 5, defaultValue = 1f)
-    val berries = Resource("berries", 5, defaultValue = 1f)
+    val mushrooms = Resource("mushrooms", 5, defaultValue = 3f)
+    val berries = Resource("berries", 5, defaultValue = 0f)
 
     val foods = mapOf(
         "Mushrooms" to Food(mushrooms,2),
@@ -30,8 +30,8 @@ class Game {
     )
     var exploring by localStorageBooleanSignal("exploring", false)
 
-    val bowl = Upgrade("bowl", mapOf(metal to 1f))
-    val bucket = Upgrade("bucket", mapOf(metal to 3f, heat to 20f, water to 10f))
+    val bowl = Upgrade("bowl", mapOf(metal to 1f, wood to 2f))
+    val bucket = Upgrade("bucket", mapOf(metal to 3f, wood to 4f))
 
     class Exploration {
         enum class Zone(val displayName: String) {
